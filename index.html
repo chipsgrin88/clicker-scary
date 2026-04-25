@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Кликер со скримером</title>
+    <style>
+        * {
+            user-select: none;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #1a1e2c 0%, #2a2f3f 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Poppins', system-ui, -apple-system, 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* основной виджет кликера */
+        .clicker-card {
+            background: rgba(15, 20, 30, 0.75);
+            backdrop-filter: blur(10px);
+            border-radius: 80px;
+            padding: 2rem 2.5rem;
+            text-align: center;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            transition: 0.2s;
+            width: 100%;
+            max-width: 550px;
+        }
+
+        h1 {
+            font-size: 2.6rem;
+            margin: 0 0 0.5rem 0;
+            background: linear-gradient(135deg, #FFD166, #FF8C42);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .counter {
+            font-size: 5rem;
+            font-weight: 800;
+            background: #0b0e16;
+            display: inline-block;
+            padding: 0.3rem 1.5rem;
+            margin: 1rem 0;
+            border-radius: 100px;
+            color: #f5f9ff;
+            font-family: monospace;
+            letter-spacing: 4px;
+            box-shadow: inset 0 3px 8px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.2);
+            border-bottom: 2px solid #FF8C42;
+        }
+
+        .target-info {
+            background: #1e2438;
+            padding: 8px 16px;
+            border-radius: 60px;
+            display: inline-block;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #FFB347;
+            margin-bottom: 20px;
+        }
+
+        .click-btn {
+            background: radial-gradient(circle at 30% 10%, #ff7e5e, #feb47b);
+            border: none;
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+            padding: 20px 40px;
+            margin: 25px 0 20px;
+            border-radius: 100px;
+            cursor: pointer;
+            transition: 0.1s linear;
+            box-shadow: 0 12px 0 #b64516;
+            width: 80%;
+            font-family: inherit;
+            letter-spacing: 2px;
+        }
+
+        .click-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 6px 0 #b64516;
+        }
+
+        .click-btn:disabled {
+            opacity: 0.5;
+            transform: translateY(0);
+            cursor: not-allowed;
+            filter: grayscale(0.2);
+            box-shadow: 0 12px 0 #b64516;
+        }
+
+        .reset-btn {
+            background: #2c3e66;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            padding: 12px 28px;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-weight: bold;
+            transition: 0.1s;
+            box-shadow: 0 5px 0 #121624;
+        }
+
+        .reset-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #121624;
+        }
+
+        .progress-bar {
+            background: #0f111c;
+            height: 12px;
+            border-radius: 20px;
+            margin: 20px 0 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #ffb347, #ff6b4a);
+            border-radius: 20px;
+            transition: width 0.1s ease;
+        }
+
+        footer {
+            margin-top: 25px;
+            font-size: 0.75rem;
+            color: #8f9bb3;
+        }
+
+        /* СКРИМЕР — на весь экран, поверх всего */
+        .scrimer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            animation: flash 0.15s infinite 3s;
+            cursor: pointer;
+        }
+
+        .scrimer-content {
+            text-align: center;
+            transform: scale(1.2);
+            animation: shake 0.2s infinite;
+        }
+
+        .scrimer-img {
+            max-width: 90vw;
+            max-height: 90vh;
+            border-radius: 18px;
+            box-shadow: 0 0 40px red;
+            filter: drop-shadow(0 0 15px crimson);
+        }
+
+        /* Анимки для страха */
+        @keyframes flash {
+            0% { background: black; }
+            50% { background: #220000; }
+            100% { background: black; }
+        }
+
+        @keyframes shake {
+            0% { transform: translate(0, 0) scale(1.2); }
+            25% { transform: translate(8px, -6px) scale(1.25); }
+            50% { transform: translate(-8px, 4px) scale(1.18); }
+            75% { transform: translate(5px, -3px) scale(1.23); }
+            100% { transform: translate(0, 0) scale(1.2); }
+        }
+
+        /* простой крестик, чтобы закрыть скример */
+        .close-scrimer {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: white;
+            background: rgba(0,0,0,0.6);
+            width: fit-content;
+            margin: 0 auto;
+            padding: 8px 20px;
+            border-radius: 60px;
+            font-size: 14px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            font-weight: bold;
+            border: 1px solid white;
+        }
+
+        @media (max-width: 500px) {
+            .click-btn { font-size: 1.5rem; padding: 15px 20px; width: 95%; }
+            .counter { font-size: 3rem; }
+            h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="clicker-card">
+    <h1>😈 КЛИКЕР ПРОКЛЯТИЯ 😈</h1>
+    <div class="target-info">
+        🎲 ЦЕЛЬ: <span id="targetRange">??</span> кликов
+    </div>
+    <div class="counter" id="clickCounter">0</div>
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <button class="click-btn" id="clickButton">КЛИКНИ МЕНЯ</button>
+    <button class="reset-btn" id="resetButton">🔄 СБРОС / НОВАЯ ИГРА</button>
+    <footer>⚠️ ВНИМАНИЕ: Внезапный скример + резкий звук!<br> Кликай аккуратно, цель случайна (30–70 кликов)</footer>
+</div>
+
+<!-- скрытый слой для скримера -->
+<div id="scrimerLayer" class="scrimer-overlay">
+    <div class="scrimer-content">
+        <img class="scrimer-img" id="scaryImage" alt="BOO!" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23000'/%3E%3Ccircle cx='200' cy='180' r='100' fill='%23ffcc00'/%3E%3Ccircle cx='140' cy='150' r='18' fill='white'/%3E%3Ccircle cx='260' cy='150' r='18' fill='white'/%3E%3Ccircle cx='140' cy='150' r='8' fill='black'/%3E%3Ccircle cx='260' cy='150' r='8' fill='black'/%3E%3Cpath d='M120 250 Q200 310 280 250' stroke='%23883300' stroke-width='12' fill='none' stroke-linecap='round' /%3E%3Ctext x='200' y='340' font-size='40' fill='white' text-anchor='middle' font-weight='bold'%3EBOO!%3C/text%3E%3C/svg%3E"
+             style="width: 400px; max-width: 80vw;">
+        <div class="close-scrimer" id="closeScrimerBtn">✖️ ЗАКРЫТЬ ✖️</div>
+    </div>
+</div>
+
+<script>
+    (function(){
+        // ----- ИГРОВЫЕ ПЕРЕМЕННЫЕ -----
+        let clickCount = 0;          // текущее количество кликов
+        let targetClicks = 0;        // целевое число от 30 до 70
+        let isScared = false;         // активирован ли скример (блокировка кликов)
+        let audioContext = null;      // Web Audio контекст для генерации звука скримера
+        let isSoundAllowed = false;    // звук можно включить только после первого клика (взаимодействие)
+
+        // DOM элементы
+        const clickCounterSpan = document.getElementById('clickCounter');
+        const targetRangeSpan = document.getElementById('targetRange');
+        const clickBtn = document.getElementById('clickButton');
+        const resetBtn = document.getElementById('resetButton');
+        const progressFill = document.getElementById('progressFill');
+        const scrimerLayer = document.getElementById('scrimerLayer');
+        const closeScrimerBtn = document.getElementById('closeScrimerBtn');
+
+        // генерация случайной цели 30-70 (включительно)
+        function generateTarget() {
+            return Math.floor(Math.random() * (70 - 30 + 1)) + 30;
+        }
+
+        // обновить UI (счетчик, прогресс-бар, текст цели)
+        function updateUI() {
+            clickCounterSpan.textContent = clickCount;
+            const percent = Math.min(100, (clickCount / targetClicks) * 100);
+            progressFill.style.width = percent + '%';
+            // если скример уже сработал — не меняем кликабельность, но счетчик заморожен отдельно
+        }
+
+        // Воспроизвести ЖЕСТКИЙ звуковой скример через Web Audio (резкий шум/визг)
+        function playScarySound() {
+            try {
+                // если контекст еще не создан — создаём, но он должен быть запущен после жеста пользователя
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                // если контекст в suspended, пробуем resume (браузеры разрешат после клика на страницу)
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume().then(() => {
+                        actuallyGenerateScaryNoise();
+                    }).catch(e => console.warn("audio resume error", e));
+                } else {
+                    actuallyGenerateScaryNoise();
+                }
+            } catch(e) {
+                console.warn("Web Audio не поддерживается, звука не будет", e);
+            }
+        }
+
+        function actuallyGenerateScaryNoise() {
+            if (!audioContext) return;
+            const now = audioContext.currentTime;
+            const masterGain = audioContext.createGain();
+            masterGain.gain.value = 0.9;  // громко, но не до разрыва колонок
+            masterGain.connect(audioContext.destination);
+
+            // 1) генератор "визга" — синус с быстрой модуляцией частоты
+            const osc = audioContext.createOscillator();
+            const gainOsc = audioContext.createGain();
+            osc.type = 'sawtooth';   // резкий звук
+            osc.frequency.value = 880;
+            gainOsc.gain.value = 0.7;
+            osc.connect(gainOsc);
+            gainOsc.connect(masterGain);
+            osc.start();
+            gainOsc.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+            osc.stop(now + 1.2);
+
+            // 2) "белый шум" для эффекта паники
+            const bufferSize = 4096;
+            const whiteNoise = audioContext.createScriptProcessor(bufferSize, 1, 1);
+            whiteNoise.onaudioprocess = function(e) {
+                const output = e.outputBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    output[i] = (Math.random() * 2 - 1) * 0.6;
+                }
+            };
+            const noiseGain = audioContext.createGain();
+            noiseGain.gain.value = 0.5;
+            whiteNoise.connect(noiseGain);
+            noiseGain.connect(masterGain);
+            // отключаем через 1 секунду, чтобы не фонить
+            setTimeout(() => {
+                if (whiteNoise) whiteNoise.disconnect();
+                noiseGain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.1);
+            }, 700);
+        }
+
+        // ПОКАЗАТЬ СКРИМЕР (визуальный + звук)
+        function triggerScrimer() {
+            if (isScared) return; // уже активен
+            
+            isScared = true;
+            clickBtn.disabled = true;   // отключаем кликер
+
+            // 1) Показываем слой скримера
+            scrimerLayer.style.display = 'flex';
+            
+            // 2) Визуальный апгрейд картинки: делаем более криповую (подменим src на страшный мем)
+            const scaryImg = document.getElementById('scaryImage');
+            // Использую страшную рожу в SVG (можно заменить внешний URL, но встроенный безопасен)
+            // добавим байт жуткости: изменяем SVG на демоническую маску
+            scaryImg.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 500'%3E%3Crect width='500' height='500' fill='%23110000'/%3E%3Ccircle cx='250' cy='220' r='140' fill='%23660000'/%3E%3Ccircle cx='180' cy='180' r='28' fill='white'/%3E%3Ccircle cx='320' cy='180' r='28' fill='white'/%3E%3Ccircle cx='190' cy='185' r='12' fill='black'/%3E%3Ccircle cx='310' cy='185' r='12' fill='black'/%3E%3Cpath d='M170 320 Q250 380 330 320' stroke='%23330000' stroke-width='20' fill='none' stroke-linecap='round' /%3E%3Cpath d='M140 130 L180 100 M360 130 L320 100' stroke='%23ff0000' stroke-width='10' /%3E%3Ctext x='250' y='440' font-size='60' fill='%23ffaaaa' text-anchor='middle' font-weight='bold'%3EAAAAA!%3C/text%3E%3C/svg%3E";
+            
+            // 3) звуковой скример
+            playScarySound();
+            
+            // 4) вибрация если мобильное устройство
+            if (navigator.vibrate) navigator.vibrate(500);
+            
+            // 5) дополнительный взрывной эффект: меняем фон документа на секунду
+            document.body.style.backgroundColor = '#400000';
+            setTimeout(() => { document.body.style.backgroundColor = ''; }, 200);
+        }
+
+        // СБРОС игры
+        function resetGame() {
+            if (audioContext && audioContext.state !== 'closed') {
+                // не закрываем контекст, но останавливаем лишние звуки (если играют — просто молча)
+                try {
+                    // ничего не делаем особенного
+                } catch(e) {}
+            }
+            // сбрасываем флаги
+            isScared = false;
+            clickBtn.disabled = false;
+            // генерируем новую цель
+            targetClicks = generateTarget();
+            clickCount = 0;
+            updateUI();
+            targetRangeSpan.textContent = `${targetClicks} кликов`;
+            progressFill.style.width = '0%';
+            clickCounterSpan.textContent = '0';
+            
+            // если скример слой был открыт — закрываем
+            scrimerLayer.style.display = 'none';
+            
+            // возвращаем обычную картинку обратно на нейтральную (не страшную)
+            const scaryImg = document.getElementById('scaryImage');
+            scaryImg.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23000'/%3E%3Ccircle cx='200' cy='180' r='100' fill='%23ffcc00'/%3E%3Ccircle cx='140' cy='150' r='18' fill='white'/%3E%3Ccircle cx='260' cy='150' r='18' fill='white'/%3E%3Ccircle cx='140' cy='150' r='8' fill='black'/%3E%3Ccircle cx='260' cy='150' r='8' fill='black'/%3E%3Cpath d='M120 250 Q200 310 280 250' stroke='%23883300' stroke-width='12' fill='none' stroke-linecap='round' /%3E%3Ctext x='200' y='340' font-size='40' fill='white' text-anchor='middle' font-weight='bold'%3EBOO!%3C/text%3E%3C/svg%3E";
+        }
+
+        // Обработчик клика по главной кнопке
+        function handleClick() {
+            if (isScared) return;     // скример уже активен
+            if (clickCount >= targetClicks) return; // на всякий случай допзащита
+            
+            clickCount++;
+            updateUI();
+            
+            // Проверяем, достигнута ли цель (ровно targetClicks или больше, но у нас условие строго)
+            if (clickCount === targetClicks) {
+                triggerScrimer();
+            } else if (clickCount > targetClicks) {
+                // если вдруг перекликали (но у нас блокировка, всё равно подстраховка)
+                triggerScrimer();
+            }
+        }
+        
+        // инициализация игры
+        function init() {
+            targetClicks = generateTarget();
+            clickCount = 0;
+            isScared = false;
+            clickBtn.disabled = false;
+            targetRangeSpan.textContent = `${targetClicks} кликов`;
+            updateUI();
+            scrimerLayer.style.display = 'none';
+            
+            // события
+            clickBtn.addEventListener('click', handleClick);
+            resetBtn.addEventListener('click', resetGame);
+            
+            // закрытие скримера по кнопке "закрыть"
+            closeScrimerBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (scrimerLayer.style.display === 'flex') {
+                    scrimerLayer.style.display = 'none';
+                    // не разблокируем клики автоматически, нужно сбросить через кнопку сброс
+                    // но дадим пользователю понять: кнопка "сброс" разблокирует
+                }
+            });
+            
+            // также можно кликнуть по оверлею для закрытия (но безопасно)
+            scrimerLayer.addEventListener('click', function(e) {
+                if(e.target === scrimerLayer || e.target.classList.contains('close-scrimer')) {
+                    scrimerLayer.style.display = 'none';
+                }
+            });
+            
+            // инициализация аудио контекста при первом клике где-либо – чтобы убрать блокировку автозвука
+            function enableAudioOnFirstInteraction() {
+                if (audioContext && audioContext.state === 'suspended') {
+                    audioContext.resume().catch(e=>console.log);
+                } else if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    audioContext.resume().catch(e=>console.log);
+                }
+                document.removeEventListener('click', enableAudioOnFirstInteraction);
+                document.removeEventListener('touchstart', enableAudioOnFirstInteraction);
+            }
+            document.addEventListener('click', enableAudioOnFirstInteraction);
+            document.addEventListener('touchstart', enableAudioOnFirstInteraction);
+        }
+        
+        init();
+    })();
+</script>
+</body>
+</html>
